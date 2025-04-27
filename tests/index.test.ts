@@ -1,5 +1,5 @@
 import { Logger } from "../Logger";
-import { logMessageTest } from "./test.defns";
+import { LogMessageOptions, logMessageTest } from "./test.defns";
 import { createLogger, transports } from "winston";
 import fs from "fs";
 import path from "path";
@@ -13,26 +13,16 @@ describe("A Logger", () => {
 	   jest.clearAllMocks();
    });
    describe("Logging Messages", () => {
-	  test("Should log 'info' messages.", () => {
-		  logMessageTest(logger, { level: 'info', message: 'This is an info message' });
-	  });
-	  test("Should log 'error' messages.", () => {
-		  logMessageTest(logger, { level: 'error', message: 'This is an error message' });
-	  });
-	  test("Should log 'debug' messages.", () => {
-		  logMessageTest(logger, { level: 'debug', message: 'This is an debug message' });
-	  });
-	  test("Should log 'warn' messages.", () => {
-		  logMessageTest(logger, { level: 'warn', message: 'This is a warn message' });
-	  });
-	  test("Should log 'verbose' messages.", () => {
-		  logMessageTest(logger, { level: 'verbose', message: 'This is a verbose message' });
-	  });
-	  test("Should log 'silly' messages.", () => {
-		  logMessageTest(logger, { level: 'silly', message: 'This is a silly message' });
-	  });
-	  test("Should log with metadata.", () => {
-		  logMessageTest(logger, { level: 'info', message: 'This is an info message', meta: {userId: 123} });
+	  test.each([
+	    [{ level: 'info', message: 'This is an info message', meta: undefined }, 'info'],
+        [{ level: 'error', message: 'This is an error message', meta: undefined }, 'error'],
+        [{ level: 'debug', message: 'This is a debug message', meta: undefined }, 'debug'],
+        [{ level: 'warn', message: 'This is a warn message', meta: undefined }, 'warn'],
+        [{ level: 'verbose', message: 'This is a verbose message', meta: undefined}, 'verbose'],
+        [{ level: 'silly', message: 'This is a silly message', meta: undefined }, 'silly'],
+        [{ level: 'info', message: 'This is an info message', meta: { userId: 123 } }, 'info']
+	  ])("Passing '%s' should log message: '%s'.", (logOptions) => {
+		  logMessageTest(logger, logOptions);
 	  });
    });
    describe("Log Level Management", () => {

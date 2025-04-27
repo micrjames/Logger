@@ -22,4 +22,4 @@ const logMessageTest = (logger: Logger, options: LogMessageOptions) => {
   expect(logSpy).toHaveBeenCalledWith(message, { meta });
   logSpy.mockRestore();
 };
-export { logMessageTest };
+export { LogMessageOptions, logMessageTest };
