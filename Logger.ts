@@ -52,23 +52,31 @@ export class Logger {
 			throw new Error(`Invalid log level: ${level}. Log level not changed.`);
 		}
     }
+	public getLogLevel(): string {
+		return this.logger['level'];
+	}
 
     public log(level: keyof CustomLevels['levels'], message: string, meta?: LogData) {
 		this.logger[level](message, { meta });
     }
 
     public middleware() {
-        return (req: Request, _: Response, next: NextFunction) => {
-			const logData: LogData = {
-                method: req.method,
-                url: req.url,
-                // You can add any other relevant data here
-                // For example, headers, query parameters, etc.
-                headers: req.headers,
-                query: req.query,
-                body: req.body,
-			};
-			this.log('info', 'HTTP request', logData);
+        return (req: Request, res: Response, next: NextFunction) => {
+			const start = Date.now();
+			res.on('finish', () => {
+				const logData: LogData = {
+					method: req.method,
+					url: req.url,
+					status: req.statusCode,
+					responseTime: Date.now() - start,
+					// You can add any other relevant data here
+					// For example, headers, query parameters, etc.
+					headers: req.headers,
+					query: req.query,
+					body: req.body,
+				};
+				this.log('info', 'HTTP request', logData);
+			});
             next();
 		};
     }
