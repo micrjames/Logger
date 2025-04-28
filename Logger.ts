@@ -67,7 +67,7 @@ export class Logger {
 				const logData: LogData = {
 					method: req.method,
 					url: req.url,
-					status: req.statusCode,
+					status: res.statusCode,
 					responseTime: Date.now() - start,
 					// You can add any other relevant data here
 					// For example, headers, query parameters, etc.

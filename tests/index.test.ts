@@ -4,10 +4,12 @@ import { LogMessageOptions, logMessageTest, LoggerMthds } from "./test.defns";
 import { createLogger, transports } from "winston";
 import fs from "fs";
 import path from "path";
+import { Request, Response, NextFunction } from "express";
 
 describe("A Logger", () => {
    let logger: Logger;
    let logSpy: jest.SpyInstance;
+
    beforeEach(() => {
 	   logger = new Logger('info'); // Initialize logger with default log level
    });
@@ -35,6 +37,13 @@ describe("A Logger", () => {
 		  const level = logger['logger'].level;
           expect(level).toBe('debug'); // Access private property for testing
 	   });
+	   test("Should get current log level.", () => {
+		  let level = logger.getLogLevel();
+		  expect(level).toBe('info');
+		  logger.setLogLevel('debug');
+		  level = logger.getLogLevel();
+		  expect(level).toBe('debug');
+	   });
 	   test("Should not set invalid log level.", () => {
           expect(() => {
 			  logger.setLogLevel('invalid' as any); // Type assertion to bypass TypeScript check
@@ -42,7 +51,41 @@ describe("A Logger", () => {
 	   });
    });
    describe("Middleware", () => {
-	   test.todo("Should log HTTP requests using middleware.");
+	   test("Should log HTTP requests using middleware.", () => {
+		   const req = {
+			   method: 'GET',
+			   url: '/api/test',
+			   headers: { 'content-type': 'application/json' },
+			   query: {},
+			   body: {}
+		   } as Request;
+
+		   const res = {
+			   statusCode: 200,
+			   on: jest.fn((event, callback) => {
+				   if(event === 'finish') {
+					   callback(); // Simulate response finish
+				   }
+			   })
+		   } as unknown as Response;
+
+		   const next = jest.fn();
+
+		   logSpy = jest.spyOn(logger, 'log');
+		   const middleware = logger.middleware();
+		   middleware(req, res, next);
+
+		   expect(logSpy).toHaveBeenCalledWith('info', 'HTTP request', expect.objectContaining({
+			   method: 'GET',
+			   url: '/api/test',
+			   status: 200,
+			   headers: req.headers,
+			   query: req.query,
+			   body: req.body,
+			   responseTime: expect.any(Number)
+		   }));
+		   expect(next).toHaveBeenCalled();
+	   });
    });
    describe("Exception Logging", () => {
 	   test.todo("Should log to file correctly.");
