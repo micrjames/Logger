@@ -30,8 +30,16 @@ describe("A Logger", () => {
 	  });
    });
    describe("Log Level Management", () => {
-	   test.todo("Should set log level dynamically.");
-	   test.todo("Should not set invalid log level.");
+	   test("Should set log level dynamically.", () => {
+	      logger.setLogLevel('debug');
+		  const level = logger['logger'].level;
+          expect(level).toBe('debug'); // Access private property for testing
+	   });
+	   test("Should not set invalid log level.", () => {
+          expect(() => {
+			  logger.setLogLevel('invalid' as any); // Type assertion to bypass TypeScript check
+		  }).toThrowError(new Error("Invalid log level: invalid. Log level not changed."));
+	   });
    });
    describe("Middleware", () => {
 	   test.todo("Should log HTTP requests using middleware.");

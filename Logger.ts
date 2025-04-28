@@ -6,6 +6,7 @@ import { customLevels, CustomLevels, LoggerOptionsExtended, LogData } from "./lo
 export class Logger {
     private logger: WinstonLogger;
     private customLevels: CustomLevels;
+
 	constructor(logLevel: string = 'info') {
 		this.customLevels = customLevels; 
 
@@ -45,7 +46,11 @@ export class Logger {
 		};
 	}
     public setLogLevel(level: string) {
-		this.logger.level = level;
+		if(level in this.customLevels.levels) {
+			this.logger.level = level;
+		} else {
+			throw new Error(`Invalid log level: ${level}. Log level not changed.`);
+		}
     }
 
     public log(level: keyof CustomLevels['levels'], message: string, meta?: LogData) {
