@@ -15,11 +15,9 @@ interface LogMessageOptions {
 	message: string;
 	meta?: LogData;
 }
-const logMessageTest = (logger: Logger, options: LogMessageOptions) => {
+const logMessageTest = (logSpy: jest.SpyInstance, logger: Logger, options: LogMessageOptions) => {
   const { level, message, meta } = options;
-  const logSpy: jest.SpyInstance = jest.spyOn(logger['logger'], level as keyof LoggerMthds);
   logger.log(level, message, meta);
   expect(logSpy).toHaveBeenCalledWith(message, { meta });
-  logSpy.mockRestore();
 };
-export { LogMessageOptions, logMessageTest };
+export { LoggerMthds, LogMessageOptions, logMessageTest };

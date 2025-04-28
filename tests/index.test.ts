@@ -1,11 +1,13 @@
 import { Logger } from "../Logger";
-import { LogMessageOptions, logMessageTest } from "./test.defns";
+import { CustomLevels, LogData } from "../logger.defns";
+import { LogMessageOptions, logMessageTest, LoggerMthds } from "./test.defns";
 import { createLogger, transports } from "winston";
 import fs from "fs";
 import path from "path";
 
 describe("A Logger", () => {
    let logger: Logger;
+   let logSpy: jest.SpyInstance;
    beforeEach(() => {
 	   logger = new Logger('info'); // Initialize logger with default log level
    });
@@ -21,8 +23,10 @@ describe("A Logger", () => {
         [{ level: 'verbose', message: 'This is a verbose message', meta: undefined}, 'verbose'],
         [{ level: 'silly', message: 'This is a silly message', meta: undefined }, 'silly'],
         [{ level: 'info', message: 'This is an info message', meta: { userId: 123 } }, 'info']
-	  ])("Passing '%s' should log message: '%s'.", (logOptions) => {
-		  logMessageTest(logger, logOptions);
+	  ] as [LogMessageOptions, string][])("Passing '%s' should log message: '%s'.", logOptions => {
+		  logSpy = jest.spyOn(logger['logger'], logOptions.level as keyof LoggerMthds);
+		  logMessageTest(logSpy, logger, logOptions);
+		  logSpy.mockRestore();
 	  });
    });
    describe("Log Level Management", () => {
