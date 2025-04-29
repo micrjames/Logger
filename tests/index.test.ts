@@ -4,6 +4,8 @@ import { LogMessageOptions, logMessageTest, LoggerMthds } from "./test.defns";
 import { createLogger, transports } from "winston";
 import fs from "fs";
 import path from "path";
+import mockFs from "mock-fs";
+import { format } from "date-fns"; // For date formatting
 import { Request, Response, NextFunction } from "express";
 
 describe("A Logger", () => {
@@ -96,9 +98,75 @@ describe("A Logger", () => {
 	   });
    });
    describe("File Logging", () => {
-	   test.todo("Should log to file correctly.");
+	   const currentDate = format(new Date(), 'yyyy-MM-dd');
+	   const logFilePath = path.join('logs', `${currentDate}-combined.log`);
+	   const errorLogFilePath = path.join('logs', `${currentDate}-error.log`);
+	   // const logFilePath = path.join(__dirname, 'logs', '2023-10-01-combined.log'); // Adjust the date as needed for your test
+	   // const errorLogFilePath = path.join(__dirname, 'logs', '2023-10-01-error.log'); // Adjust the date as needed for your test
+	   /*
+	   beforeEach(() => {
+		   // Clear the log files before each test
+		   if (fs.existsSync(logFilePath)) {
+			  fs.unlinkSync(logFilePath);
+		   }
+		   if (fs.existsSync(errorLogFilePath)) {
+			  fs.unlinkSync(errorLogFilePath);
+		   }
+	   });
+
+	   afterEach(() => {
+		   // Clean up log files after tests
+		   if (fs.existsSync(logFilePath)) {
+			   fs.unlinkSync(logFilePath);
+		   }
+		   if (fs.existsSync(errorLogFilePath)) {
+			   fs.unlinkSync(errorLogFilePath);
+		   }
+	   });
+	   */
+	   beforeEach(() => {
+		   // Mock the file system
+		   mockFs({
+			   logs: {} // Create a mock directory for logs
+		   });
+	   });
+	   afterEach(() => {
+		   // Restore the original file system
+		   mockFs.restore();
+	   });
+	   test("Should log to file correctly.", async () => {
+		   const logMessage = "This is a test log message.";
+		   const errorMessage = "This is a test error message.";
+
+		   // Log a message and an error
+		   logger.log('info', logMessage);
+		   logger.log('error', errorMessage);
+
+		   // Wait for a short time to ensure logs are written
+		   await new Promise(resolve => setTimeout(resolve, 100)); 
+
+		   // Check if the combined log file exists and contains the log message
+		   const existsLogFilePath = fs.existsSync(logFilePath);
+		   expect(existsLogFilePath).toBe(true);
+		   const logFileContent = fs.readFileSync(logFilePath, 'utf-8');
+		   expect(logFileContent).toContain(logMessage);
+
+		   // Check if the error log file exists and contains the error message
+		   const existsErrorLogFilePath = fs.existsSync(errorLogFilePath);
+		   expect(existsErrorLogFilePath).toBe(true);
+		   const errorLogFileContent = fs.readFileSync(errorLogFilePath, 'utf-8');
+		   expect(errorLogFileContent).toContain(errorMessage);
+	   });
    });
    describe("Multiple Log Calls", () => {
-	   test.todo("Should handle multiple log calls.");
+	   test("Should handle multiple log calls.", () => {
+		   const logSpy = jest.spyOn(logger['logger'], 'info');
+           for (let i = 0; i < 10; i++) {
+               logger.log('info', `Log message ${i}`);
+			   expect(logSpy).toHaveBeenCalledWith(`Log message ${i}`, { meta: undefined });     // expect.stringContaining(…)
+           }
+
+           expect(logSpy).toHaveBeenCalledTimes(10);
+	   });
    });
 });
