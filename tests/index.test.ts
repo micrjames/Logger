@@ -88,6 +88,14 @@ describe("A Logger", () => {
 	   });
    });
    describe("Exception Logging", () => {
+	   test("Should log exceptions to file correctly.", () => {
+		   const error = new Error("Test error");
+		   logSpy = jest.spyOn(logger['logger'], 'error');
+		   logger.log('error', error.message); // Simulate logging an error
+		   expect(logSpy).toHaveBeenCalledWith(error.message, { meta: undefined });
+	   });
+   });
+   describe("File Logging", () => {
 	   test.todo("Should log to file correctly.");
    });
    describe("Multiple Log Calls", () => {
