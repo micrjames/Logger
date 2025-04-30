@@ -10,8 +10,8 @@ export class Logger {
 	constructor(logLevel: string = 'info') {
 		this.customLevels = customLevels; 
 
-        this.logger = winston.createLogger(this.getLoggerOptions(logLevel));
         winston.addColors(this.customLevels.colors);
+        this.logger = winston.createLogger(this.getLoggerOptions(logLevel));
 	}
 	private getLoggerOptions(logLevel: string): LoggerOptionsExtended {
 		return {
@@ -85,6 +85,7 @@ export class Logger {
 		// Update the logger's format based on the provided format object
 		this.logger.format = winston.format.combine(
 			winston.format.timestamp(),
+			winston.format.colorize(),
 			winston.format.printf(({ timestamp, level, message, ...metadata }: { 
 				timestamp: string; 
 				level: string; 

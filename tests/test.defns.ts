@@ -1,4 +1,4 @@
-import { CustomLevels, LogData } from "../logger.defns";
+import { CustomLevels, LogData, LogForm } from "../logger.defns";
 import { Logger } from "../Logger";
 
 interface LoggerMthds {
@@ -9,7 +9,6 @@ interface LoggerMthds {
 	verbose(message: string, meta?: any): void;
 	silly(message: string, meta?: any): void;
 }
-
 interface LogMessageOptions {
 	level: keyof CustomLevels['levels'];
 	message: string;
@@ -20,4 +19,23 @@ const logMessageTest = (logSpy: jest.SpyInstance, logger: Logger, options: LogMe
   logger.log(level, message, meta);
   expect(logSpy).toHaveBeenCalledWith(message, { meta });
 };
-export { LoggerMthds, LogMessageOptions, logMessageTest };
+type TestCustomFormat = Pick<LogForm, 'service' | 'userId' | 'requestId' | 'ipAddress' | 'responseTime'>;
+const testCustomFormat: TestCustomFormat = {
+	service: 'test-service',
+	userId: 'test-user',
+	requestId: 'test-request-id',
+	ipAddress: '192.168.1.1',
+	responseTime: '100ms'
+};
+const expectedLogEntry: LogForm = {
+	timestamp: expect.any(String),
+	level: 'info',
+	message: 'Test log message',
+	service: 'test-service',
+	requestId: 'test-request-id',
+	userId: 'test-user',
+	ipAddress: '192.168.1.1',
+	responseTime: '100ms',
+	metadata: {},
+};
+export { LoggerMthds, LogMessageOptions, logMessageTest, testCustomFormat, expectedLogEntry };

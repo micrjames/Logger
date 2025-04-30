@@ -1,5 +1,5 @@
 import { Logger } from "../Logger";
-import { LogMessageOptions, logMessageTest, LoggerMthds } from "./test.defns";
+import { LogMessageOptions, logMessageTest, LoggerMthds, testCustomFormat } from "./test.defns";
 import fs from "fs";
 import path from "path";
 import mockFs from "mock-fs";
@@ -167,7 +167,47 @@ describe("A Logger", () => {
            expect(logSpy).toHaveBeenCalledTimes(10);
 	   });
    });
-   describe("Custom Format Management", () => {
-	   test.todo("Should set custom format.");
-   });
+	describe("Custom Format Management", () => {
+		test("Should set custom format.", () => {
+			// Set the custom format
+			logger.setCustomFormat(testCustomFormat);
+			
+			// Log a message with the custom format
+			logger.log('info', 'Test log message', testCustomFormat);
+
+			// Use a spy to capture the log output
+			logSpy = jest.spyOn(logger['logger'], 'info');
+
+			// Log the message again to trigger the spy
+			logger.log('info', 'Test log message', testCustomFormat);
+
+			// Check if the spy was called
+			expect(logSpy).toHaveBeenCalled();
+
+			// Get the arguments passed to the spy
+			const logArgs = logSpy.mock.calls[0];
+
+			// The first argument should be the log message
+			const logMessage = logArgs[0]; // This should be a string
+			const meta = logArgs[1]; // The metadata
+
+			// Verify that the log message is correct
+			expect(logMessage).toBe('Test log message');
+
+			// Log the meta object to see its structure
+			console.log(meta);
+
+			// Verify that the metadata matches the expected structure
+			expect(meta).toMatchObject({
+				meta: {
+					service: 'test-service',
+					userId: 'test-user',
+					requestId: 'test-request-id',
+					ipAddress: '192.168.1.1',
+					responseTime: '100ms',
+				}
+			});
+		});
+	});
+
 });
