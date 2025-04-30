@@ -1,12 +1,10 @@
 import { Logger } from "../Logger";
-import { CustomLevels, LogData } from "../logger.defns";
 import { LogMessageOptions, logMessageTest, LoggerMthds } from "./test.defns";
-import { createLogger, transports } from "winston";
 import fs from "fs";
 import path from "path";
 import mockFs from "mock-fs";
 import { format } from "date-fns"; // For date formatting
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 
 describe("A Logger", () => {
    let logger: Logger;
@@ -168,5 +166,8 @@ describe("A Logger", () => {
 
            expect(logSpy).toHaveBeenCalledTimes(10);
 	   });
+   });
+   describe("Custom Format Management", () => {
+	   test.todo("Should set custom format.");
    });
 });

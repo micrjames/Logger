@@ -32,4 +32,18 @@ const customLevels: CustomLevels = {
 	}
 };
 
-export { customLevels, CustomLevels, LoggerOptionsExtended, LogData };
+interface LogForm {
+	timestamp: string;        // The date and time of the log entry
+	level: string;           // The severity level of the log (e.g., info, error)
+	message: string;         // The log message
+	service: string;         // The name of the service or module
+	requestId: string;       // Unique identifier for the request
+	userId: string;          // Identifier for the user (if applicable)
+	ipAddress: string;       // IP address of the client
+	responseTime: string;    // Time taken to process the request
+	metadata?: {             // Additional metadata (optional)
+		[key: string]: any;  // Allow any key-value pairs
+	};
+}
+
+export { customLevels, CustomLevels, LoggerOptionsExtended, LogData, LogForm };
