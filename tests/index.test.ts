@@ -168,15 +168,19 @@ describe("A Logger", () => {
 	   });
    });
 	describe("Custom Format Management", () => {
+		beforeEach(() => {
+			// Use a spy to capture the log output
+			logSpy = jest.spyOn(logger['logger'], 'info');
+		});
+		afterEach(() => {
+			jest.clearAllMocks();
+		});
 		test("Should set custom format.", () => {
 			// Set the custom format
 			logger.setCustomFormat(testCustomFormat);
 			
 			// Log a message with the custom format
 			logger.log('info', 'Test log message', testCustomFormat);
-
-			// Use a spy to capture the log output
-			logSpy = jest.spyOn(logger['logger'], 'info');
 
 			// Log the message again to trigger the spy
 			logger.log('info', 'Test log message', testCustomFormat);
@@ -194,9 +198,6 @@ describe("A Logger", () => {
 			// Verify that the log message is correct
 			expect(logMessage).toBe('Test log message');
 
-			// Log the meta object to see its structure
-			console.log(meta);
-
 			// Verify that the metadata matches the expected structure
 			expect(meta).toMatchObject({
 				meta: {
@@ -207,7 +208,26 @@ describe("A Logger", () => {
 					responseTime: '100ms',
 				}
 			});
+
+		});
+		test("Should set empty custom format.", () => {
+			// Additional tests for edge cases
+			logger.setCustomFormat({}); // Test with an empty format
+			logger.log('info', 'Test log message with empty format', {});
+			expect(logSpy).toHaveBeenCalled(); // Ensure it still logs
+
+		});
+		test("Should set with a different format.", () => {
+			// Test with a different format
+			const anotherFormat = { service: 'another-service' };
+			logger.setCustomFormat(anotherFormat);
+			logger.log('info', 'Test log message with another format', anotherFormat);
+			const anotherLogArgs = logSpy.mock.calls[logSpy.mock.calls.length - 1];
+			expect(anotherLogArgs[1]).toMatchObject({
+				meta: {
+					service: 'another-service',
+				}
+			});
 		});
 	});
-
 });
