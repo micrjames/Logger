@@ -109,7 +109,14 @@ export class Logger {
 	}
 
     public log(level: keyof CustomLevels['levels'], message: string, meta?: LogData) {
-		this.logger[level](message, { meta });
+		// this.logger[level](message, { meta });
+		if(this.customLevels.levels[level] <= this.customLevels.levels[this.logger.level]) {
+			try {
+				this.logger[level](message, { meta });
+			} catch(error) {
+				console.error('Logging failed:', error);
+			}
+		}
     }
 
     public middleware() {

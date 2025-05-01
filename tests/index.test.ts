@@ -11,7 +11,7 @@ describe("A Logger", () => {
    let logSpy: jest.SpyInstance;
 
    beforeEach(() => {
-	   logger = new Logger('info'); // Initialize logger with default log level
+	   logger = new Logger('silly'); // Initialize logger with default log level
    });
    afterEach(() => {
 	   jest.clearAllMocks();
@@ -39,7 +39,7 @@ describe("A Logger", () => {
 	   });
 	   test("Should get current log level.", () => {
 		  let level = logger.getLogLevel();
-		  expect(level).toBe('info');
+		  expect(level).toBe('silly');
 		  logger.setLogLevel('debug');
 		  level = logger.getLogLevel();
 		  expect(level).toBe('debug');
