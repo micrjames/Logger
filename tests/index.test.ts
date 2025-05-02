@@ -1,6 +1,6 @@
 import { Logger } from "../Logger";
 import { CustomLevels } from "../logger.defns";
-import { LogMessageOptions, logMessageTest, LoggerMthds, testCustomFormat } from "./test.defns";
+import { LogMessageOptions, logMessageTest, LoggerMthds, testCustomFormat, LogTestCase } from "./test.defns";
 import fs from "fs";
 import path from "path";
 import mockFs from "mock-fs";
@@ -75,11 +75,6 @@ describe("A Logger", () => {
 		   expect(logSpy).toHaveBeenCalledWith('This is an error message', { meta: undefined }); // Expect it to be called
 	   });
 	   */
-	type LogTestCase = {
-        level: keyof CustomLevels['levels'];
-        message: string;
-        shouldLog: boolean;
-    };
 	   test.each([
 		   [{ level: 'info', message: 'This is an info message', shouldLog: false }, 'not', 'info'],
 		   [{ level: 'warn', message: 'This is an warn message', shouldLog: true }, '', 'warn'],
