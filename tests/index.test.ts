@@ -1,4 +1,5 @@
 import { Logger } from "../Logger";
+import { CustomLevels } from "../logger.defns";
 import { LogMessageOptions, logMessageTest, LoggerMthds, testCustomFormat } from "./test.defns";
 import fs from "fs";
 import path from "path";
@@ -57,6 +58,7 @@ describe("A Logger", () => {
 	   afterEach(() => {
 		   logSpy.mockRestore(); // Restore the spy
 	   });
+	   /*
 	   test("Should not log messages above the current log level.", () => {
 		   logSpy = jest.spyOn(logger['logger'], 'info'); // Spy on the 'info' method
 		   logger.log('info', 'This is an info message'); // Attempt to log an info message
@@ -71,6 +73,25 @@ describe("A Logger", () => {
 		   logSpy = jest.spyOn(logger['logger'], 'error'); // Spy on the 'error' method
 		   logger.log('error', 'This is an error message'); // Attempt to log an error message
 		   expect(logSpy).toHaveBeenCalledWith('This is an error message', { meta: undefined }); // Expect it to be called
+	   });
+	   */
+	type LogTestCase = {
+        level: keyof CustomLevels['levels'];
+        message: string;
+        shouldLog: boolean;
+    };
+	   test.each([
+		   [{ level: 'info', message: 'This is an info message', shouldLog: false }, 'not', 'info'],
+		   [{ level: 'warn', message: 'This is an warn message', shouldLog: true }, '', 'warn'],
+		   [{ level: 'error', message: 'This is an error message', shouldLog: true }, '', 'error'],
+	  ] as [LogTestCase, string, keyof CustomLevels['levels']][])('Log Entry: %s should %s log messages at %s.', ({ level, message, shouldLog }) => {
+		   logSpy = jest.spyOn(logger['logger'], level as keyof LoggerMthds);
+		   logger.log(level, message); // Attempt to log a warn message
+		   if(shouldLog) {
+			  expect(logSpy).toHaveBeenCalledWith(message, { meta: undefined }); // Expect it to be called
+		   } else {
+			  expect(logSpy).not.toHaveBeenCalled(); // Expect it not to be called
+		   }
 	   });
    });
    describe("Middleware", () => {
