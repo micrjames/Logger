@@ -50,6 +50,29 @@ describe("A Logger", () => {
 		  }).toThrowError(new Error("Invalid log level: invalid. Log level not changed."));
 	   });
    });
+   describe("Log Level Restrictions", () => {
+	   beforeEach(() => {
+		   logger.setLogLevel('warn'); // Set log level to 'warn'
+	   });
+	   afterEach(() => {
+		   logSpy.mockRestore(); // Restore the spy
+	   });
+	   test("Should not log messages above the current log level.", () => {
+		   logSpy = jest.spyOn(logger['logger'], 'info'); // Spy on the 'info' method
+		   logger.log('info', 'This is an info message'); // Attempt to log an info message
+		   expect(logSpy).not.toHaveBeenCalled(); // Expect it not to be called
+	   });
+	   test("Should not log messages at the current log level.", () => {
+		   logSpy = jest.spyOn(logger['logger'], 'warn'); // Spy on the 'warn' method
+		   logger.log('warn', 'This is a warn message'); // Attempt to log a warn message
+		   expect(logSpy).toHaveBeenCalledWith('This is a warn message', { meta: undefined }); // Expect it to be called
+	   });
+	   test("Should not log messages below the current log level.", () => {
+		   logSpy = jest.spyOn(logger['logger'], 'error'); // Spy on the 'error' method
+		   logger.log('error', 'This is an error message'); // Attempt to log an error message
+		   expect(logSpy).toHaveBeenCalledWith('This is an error message', { meta: undefined }); // Expect it to be called
+	   });
+   });
    describe("Middleware", () => {
 	   test("Should log HTTP requests using middleware.", () => {
 		   const req = {
