@@ -118,6 +118,21 @@ export class Logger {
 			}
 		}
     }
+	public async logAsync(level: keyof CustomLevels['levels'], message: string, meta?: LogData): Promise<void> {
+		return new Promise((resolve, reject) => {
+			if(this.customLevels.levels[level] <= this.customLevels.levels[this.logger.level]) {
+				try {
+					this.logger[level](message, { meta });
+					resolve();
+				} catch(error) {
+					console.error('Logging failed:', error);
+					reject(error);
+				}
+			} else {
+				resolve(); // If the log level is not allowed, resolve without logging
+			}
+		});
+	}
 
     public middleware() {
         return (req: Request, res: Response, next: NextFunction) => {

@@ -89,6 +89,14 @@ describe("A Logger", () => {
 		   }
 	   });
    });
+   describe("Async Logging", () => {
+	   test.todo("Should log messages asynchronously at valid log levels.");
+	   test.todo("Should not log messages asynchronously above the current log levels.");
+	   test.todo("Should log messages asynchronously at the current log levels.");
+	   test.todo("Should log messages asynchronously below the current log levels.");
+	   test.todo("Should reject on logging failure.");
+	   test.todo("Should resolve without logging if log level is not allowed.");
+   });
    describe("Middleware", () => {
 	   test("Should log HTTP requests using middleware.", () => {
 		   const req = {
