@@ -1,6 +1,6 @@
 import { Logger } from "../Logger";
 import { CustomLevels } from "../logger.defns";
-import { LogMessageOptions, logMessageTest, LoggerMthds, testCustomFormat, LogTestCase } from "./test.defns";
+import { LogMessageOptions, logMessageTest, asyncLogMessageTest, LoggerMthds, testCustomFormat, LogTestCase } from "./test.defns";
 import fs from "fs";
 import path from "path";
 import mockFs from "mock-fs";
@@ -94,8 +94,7 @@ describe("A Logger", () => {
 		   const logMessage = "This is an async info message.";
 		   logSpy = jest.spyOn(logger['logger'], 'info');
 
-		   await logger.logAsync('info', logMessage);
-		   expect(logSpy).toHaveBeenCalledWith(logMessage, { meta: undefined });
+		   await asyncLogMessageTest(logSpy, logger, { level: 'info', message: logMessage, meta: undefined });
 	   });
 	   test("Should not log messages asynchronously above the current log level.", async () => {
 		   logger.setLogLevel('warn');
@@ -110,16 +109,14 @@ describe("A Logger", () => {
 		   const logMessage = "This is an async warn message.";
 		   logSpy = jest.spyOn(logger['logger'], 'warn');
 
-		   await logger.logAsync('warn', logMessage);
-		   expect(logSpy).toHaveBeenCalledWith(logMessage, { meta: undefined });
+		   await asyncLogMessageTest(logSpy, logger, { level: 'warn', message: logMessage, meta: undefined });
 	   });
 	   test("Should log messages asynchronously below the current log levels.", async () => {
 		   logger.setLogLevel('warn');
 		   const logMessage = "This is an async error message.";
 		   logSpy = jest.spyOn(logger['logger'], 'error');
 
-		   await logger.logAsync('error', logMessage);
-		   expect(logSpy).toHaveBeenCalledWith(logMessage, { meta: undefined });
+		   await asyncLogMessageTest(logSpy, logger, { level: 'error', message: logMessage, meta: undefined });
 	   });
 	   test("Should reject on logging failure.", async () => {
 		   const logMessage = "This is an async error message.";

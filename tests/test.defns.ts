@@ -22,6 +22,11 @@ const logMessageTest = (logSpy: jest.SpyInstance, logger: Logger, options: LogMe
   logger.log(level, message, meta);
   expect(logSpy).toHaveBeenCalledWith(message, { meta });
 };
+ const asyncLogMessageTest = async (logSpy: jest.SpyInstance, logger: Logger, options: LogMessageOptions) => {
+  const { level, message, meta } = options;
+  await logger.logAsync(level, message, meta);
+  expect(logSpy).toHaveBeenCalledWith(message, { meta });
+ }
 type TestCustomFormat = Pick<LogForm, 'service' | 'userId' | 'requestId' | 'ipAddress' | 'responseTime'>;
 const testCustomFormat: TestCustomFormat = {
 	service: 'test-service',
@@ -41,4 +46,4 @@ const expectedLogEntry: LogForm = {
 	responseTime: '100ms',
 	metadata: {},
 };
-export { LoggerMthds, LogMessageOptions, logMessageTest, testCustomFormat, expectedLogEntry, LogTestCase };
+export { LoggerMthds, LogMessageOptions, logMessageTest, asyncLogMessageTest, testCustomFormat, expectedLogEntry, LogTestCase };
