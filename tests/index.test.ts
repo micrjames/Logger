@@ -90,11 +90,54 @@ describe("A Logger", () => {
 	   });
    });
    describe("Logging with Context", () => {
-	   test.todo("Should log messages with context at valid log levels.");
-	   test.todo("Should not log messages above the current log level.");
-	   test.todo("Should log messages at the current log level with context.");
-	   test.todo("Should log messages below the current log level with context.");
-	   test.todo("Should not log messages with context if log level is not allowed.");
+	   test("Should log messages with context at valid log levels.", () => {
+		   const logMessage = "This is a log message with context.";
+		   const context = { userId: 123, action: "testAction" };
+
+		   logSpy = jest.spyOn(logger['logger'], 'info');
+		   logger.logWithContext('info', logMessage, context);
+		   expect(logSpy).toHaveBeenCalledWith(logMessage, { context });
+	   });
+	   test("Should not log messages above the current log level.", () => {
+		   logger.setLogLevel('warn'); // Set log level to 'warn'
+
+		   const logMessage = "This is a log message with context.";
+		   const context = { userId: 123, action: "testAction" };
+		   logSpy = jest.spyOn(logger['logger'], 'info');
+		   logger.logWithContext('info', logMessage, context);
+
+		   expect(logSpy).not.toHaveBeenCalled();
+	   });
+	   test("Should log messages at the current log level with context.", () => {
+		   logger.setLogLevel('warn'); // Set log level to 'warn'
+
+		   const logMessage = "This is a warn message with context.";
+		   const context = { userId: 123, action: "testAction" };
+		   logSpy = jest.spyOn(logger['logger'], 'warn');
+		   logger.logWithContext('warn', logMessage, context);
+
+		   expect(logSpy).toHaveBeenCalledWith(logMessage, { context });
+	   });
+	   test("Should log messages below the current log level with context.", () => {
+		   logger.setLogLevel('warn'); // Set log level to 'warn'
+
+		   const logMessage = "This is a error message with context.";
+		   const context = { userId: 123, action: "testAction" };
+		   logSpy = jest.spyOn(logger['logger'], 'error');
+		   logger.logWithContext('error', logMessage, context);
+
+		   expect(logSpy).toHaveBeenCalledWith(logMessage, { context });
+	   });
+	   test("Should not log messages with context if log level is not allowed.", () => {
+		   logger.setLogLevel('warn'); // Set log level to 'warn'
+
+		   const logMessage = "This is a log message with context.";
+		   const context = { userId: 123, action: "testAction" };
+		   logSpy = jest.spyOn(logger['logger'], 'info');
+		   logger.logWithContext('info', logMessage, context);
+
+		   expect(logSpy).not.toHaveBeenCalled();
+	   });
    });
    describe("Async Logging", () => {
 	   test.each<AsyncLogTestCase>([
