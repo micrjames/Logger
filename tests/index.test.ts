@@ -1,6 +1,6 @@
 import { Logger } from "../Logger";
 import { CustomLevels } from "../logger.defns";
-import { LogMessageOptions, logMessageTest, asyncLogMessageTest, LoggerMthds, testCustomFormat, LogTestCase } from "./test.defns";
+import { LogMessageOptions, logMessageTest, asyncLogMessageTest, LoggerMthds, testCustomFormat, LogTestCase, AsyncLogTestCase } from "./test.defns";
 import fs from "fs";
 import path from "path";
 import mockFs from "mock-fs";
@@ -90,11 +90,13 @@ describe("A Logger", () => {
 	   });
    });
    describe("Async Logging", () => {
-	   test("Should log messages asynchronously at valid log levels.", async () => {
-		   const logMessage = "This is an async info message.";
-		   logSpy = jest.spyOn(logger['logger'], 'info');
-
-		   await asyncLogMessageTest(logSpy, logger, { level: 'info', message: logMessage, meta: undefined });
+	   test.each<AsyncLogTestCase>([
+	    [{ level: 'info', message: 'This is an async info message.', meta: undefined }, 'info'],
+        [{ level: 'warn', message: 'This is an async warn message.', meta: undefined }, 'warn'],
+        [{ level: 'error', message: 'This is an async error message.', meta: undefined }, 'error']
+	   ] as AsyncLogTestCase[])("Should log messages asynchronously at valid log levels: %o", async logOptions => {
+		  logSpy = jest.spyOn(logger['logger'], logOptions.level as keyof LoggerMthds);
+		  await asyncLogMessageTest(logSpy, logger, logOptions);
 	   });
 	   test("Should not log messages asynchronously above the current log level.", async () => {
 		   logger.setLogLevel('warn');
@@ -103,20 +105,6 @@ describe("A Logger", () => {
 
 		   await logger.logAsync('info', logMessage);
 		   expect(logSpy).not.toHaveBeenCalled();
-	   });
-	   test("Should log messages asynchronously at the current log level.", async () => {
-		   logger.setLogLevel('warn');
-		   const logMessage = "This is an async warn message.";
-		   logSpy = jest.spyOn(logger['logger'], 'warn');
-
-		   await asyncLogMessageTest(logSpy, logger, { level: 'warn', message: logMessage, meta: undefined });
-	   });
-	   test("Should log messages asynchronously below the current log levels.", async () => {
-		   logger.setLogLevel('warn');
-		   const logMessage = "This is an async error message.";
-		   logSpy = jest.spyOn(logger['logger'], 'error');
-
-		   await asyncLogMessageTest(logSpy, logger, { level: 'error', message: logMessage, meta: undefined });
 	   });
 	   test("Should reject on logging failure.", async () => {
 		   const logMessage = "This is an async error message.";

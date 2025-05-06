@@ -17,6 +17,7 @@ interface LogMessageOptions {
 type LogTestCase = LogMessageOptions & {
     shouldLog: boolean;
 };
+type AsyncLogTestCase = [LogMessageOptions, keyof CustomLevels['levels']];
 const logMessageTest = (logSpy: jest.SpyInstance, logger: Logger, options: LogMessageOptions) => {
   const { level, message, meta } = options;
   logger.log(level, message, meta);
@@ -46,4 +47,4 @@ const expectedLogEntry: LogForm = {
 	responseTime: '100ms',
 	metadata: {},
 };
-export { LoggerMthds, LogMessageOptions, logMessageTest, asyncLogMessageTest, testCustomFormat, expectedLogEntry, LogTestCase };
+export { LoggerMthds, LogMessageOptions, logMessageTest, asyncLogMessageTest, testCustomFormat, expectedLogEntry, LogTestCase, AsyncLogTestCase };
