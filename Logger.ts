@@ -118,6 +118,12 @@ export class Logger {
 			}
 		}
     }
+	public logWithContext(level: keyof CustomLevels['levels'], message: string, context: { [key: string]: any }, meta?: LogData) {
+		if (this.customLevels.levels[level] <= this.customLevels.levels[this.logger.level]) {
+			const logData = { ...meta, context };
+			this.logger[level](message, logData);
+		}
+	}
 	public async logAsync(level: keyof CustomLevels['levels'], message: string, meta?: LogData): Promise<void> {
 		return new Promise((resolve, reject) => {
 			if(this.customLevels.levels[level] <= this.customLevels.levels[this.logger.level]) {

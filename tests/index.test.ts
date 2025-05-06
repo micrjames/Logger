@@ -89,6 +89,13 @@ describe("A Logger", () => {
 		   }
 	   });
    });
+   describe("Logging with Context", () => {
+	   test.todo("Should log messages with context at valid log levels.");
+	   test.todo("Should not log messages above the current log level.");
+	   test.todo("Should log messages at the current log level with context.");
+	   test.todo("Should log messages below the current log level with context.");
+	   test.todo("Should not log messages with context if log level is not allowed.");
+   });
    describe("Async Logging", () => {
 	   test.each<AsyncLogTestCase>([
 	    [{ level: 'info', message: 'This is an async info message.', meta: undefined }, 'info'],
