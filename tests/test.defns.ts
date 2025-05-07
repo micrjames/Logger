@@ -17,6 +17,9 @@ interface LogMessageOptions {
 type LogTestCase = LogMessageOptions & {
     shouldLog: boolean;
 };
+type LogWithContextOptions = LogMessageOptions & {
+    context: { [key: string]: any }; // This allows for any additional context properties
+};
 type AsyncLogTestCase = [LogMessageOptions, keyof CustomLevels['levels']];
 const logMessageTest = (logSpy: jest.SpyInstance, logger: Logger, options: LogMessageOptions) => {
   const { level, message, meta } = options;
@@ -27,7 +30,12 @@ const logMessageTest = (logSpy: jest.SpyInstance, logger: Logger, options: LogMe
   const { level, message, meta } = options;
   await logger.logAsync(level, message, meta);
   expect(logSpy).toHaveBeenCalledWith(message, { meta });
- }
+};
+const logWithContextTest = (logSpy: jest.SpyInstance, logger: Logger, options: LogWithContextOptions) => {
+    const { level, message, context, meta } = options;
+    logger.logWithContext(level, message, context, meta);
+    expect(logSpy).toHaveBeenCalledWith(message, { ...meta, context });
+};
 type TestCustomFormat = Pick<LogForm, 'service' | 'userId' | 'requestId' | 'ipAddress' | 'responseTime'>;
 const testCustomFormat: TestCustomFormat = {
 	service: 'test-service',
@@ -47,4 +55,4 @@ const expectedLogEntry: LogForm = {
 	responseTime: '100ms',
 	metadata: {},
 };
-export { LoggerMthds, LogMessageOptions, logMessageTest, asyncLogMessageTest, testCustomFormat, expectedLogEntry, LogTestCase, AsyncLogTestCase };
+export { LoggerMthds, LogMessageOptions, logMessageTest, asyncLogMessageTest, testCustomFormat, expectedLogEntry, LogTestCase, AsyncLogTestCase, LogWithContextOptions, logWithContextTest };
