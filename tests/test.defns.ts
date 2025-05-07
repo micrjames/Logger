@@ -20,6 +20,10 @@ type LogTestCase = LogMessageOptions & {
 type LogWithContextOptions = LogMessageOptions & {
     context: { [key: string]: any }; // This allows for any additional context properties
 };
+type LogWithContextTestCase = LogWithContextOptions & {
+    expectedCalled: boolean;
+    setLogLevel?: keyof CustomLevels['levels']; // Optional log level to set
+}
 type AsyncLogTestCase = [LogMessageOptions, keyof CustomLevels['levels']];
 const logMessageTest = (logSpy: jest.SpyInstance, logger: Logger, options: LogMessageOptions) => {
   const { level, message, meta } = options;
@@ -31,10 +35,13 @@ const logMessageTest = (logSpy: jest.SpyInstance, logger: Logger, options: LogMe
   await logger.logAsync(level, message, meta);
   expect(logSpy).toHaveBeenCalledWith(message, { meta });
 };
-const logWithContextTest = (logSpy: jest.SpyInstance, logger: Logger, options: LogWithContextOptions) => {
-    const { level, message, context, meta } = options;
+const logWithContextTest = (logSpy: jest.SpyInstance, logger: Logger, options: LogWithContextTestCase) => {
+    const { level, message, context, meta, expectedCalled, setLogLevel } = options;
+    if(setLogLevel) logger.setLogLevel(setLogLevel); // Set log level if specified
     logger.logWithContext(level, message, context, meta);
-    expect(logSpy).toHaveBeenCalledWith(message, { ...meta, context });
+    if(expectedCalled) expect(logSpy).toHaveBeenCalledWith(message, { ...meta, context });
+	else expect(logSpy).not.toHaveBeenCalled();
+
 };
 type TestCustomFormat = Pick<LogForm, 'service' | 'userId' | 'requestId' | 'ipAddress' | 'responseTime'>;
 const testCustomFormat: TestCustomFormat = {
@@ -55,4 +62,4 @@ const expectedLogEntry: LogForm = {
 	responseTime: '100ms',
 	metadata: {},
 };
-export { LoggerMthds, LogMessageOptions, logMessageTest, asyncLogMessageTest, testCustomFormat, expectedLogEntry, LogTestCase, AsyncLogTestCase, LogWithContextOptions, logWithContextTest };
+export { LoggerMthds, LogMessageOptions, logMessageTest, asyncLogMessageTest, testCustomFormat, expectedLogEntry, LogTestCase, AsyncLogTestCase, LogWithContextOptions, logWithContextTest, LogWithContextTestCase };
