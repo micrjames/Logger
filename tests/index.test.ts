@@ -1,5 +1,5 @@
 import { Logger } from "../Logger";
-import { CustomLevels } from "../logger.defns";
+import { CustomLevels, LogForm } from "../logger.defns";
 import { LogMessageOptions, logMessageTest, asyncLogMessageTest, LoggerMthds, testCustomFormat, LogTestCase, AsyncLogTestCase, logWithContextTest, LogWithContextTestCase } from "./test.defns";
 import fs from "fs";
 import path from "path";
@@ -318,11 +318,11 @@ describe("A Logger", () => {
            expect(logSpy).toHaveBeenCalledTimes(10);
 	   });
    });
-	describe("Custom Format Management", () => {
-		beforeEach(() => {
-			// Use a spy to capture the log output
-			logSpy = jest.spyOn(logger['logger'], 'info');
-		});
+   describe("Custom Format Management", () => {
+	   beforeEach(() => {
+		   // Use a spy to capture the log output
+		   logSpy = jest.spyOn(logger['logger'], 'info');
+	   });
 		afterEach(() => {
 			jest.clearAllMocks();
 		});
@@ -380,5 +380,101 @@ describe("A Logger", () => {
 				}
 			});
 		});
-	});
-});
+		test("Should handle empty custom format.", () => {
+			logger.setCustomFormat({}); // Test with an empty format
+			logger.log('info', 'Test log message with empty format.', {});
+			expect(logSpy).toHaveBeenCalled();
+
+			// Get the arguments passed to the spy
+			const logArgs = logSpy.mock.calls[0];
+
+			// The first argument should be the log message
+			const logMessage = logArgs[0];
+			const meta = logArgs[1];
+
+			expect(logMessage).toBe('Test log message with empty format.');
+			expect(meta).toEqual({"meta": {}});
+		});
+		test("Should handle invalid custom format.", () => {
+			expect(() => {
+				logger.setCustomFormat(null as any);
+			}).toThrowError('Invalid custom format: format must be an object.');
+
+			// ensure that the logger still works with the default format
+			logSpy = jest.spyOn(logger['logger'], 'info');
+			logger.log('info', 'Test log message after invalid format', {});
+			expect(logSpy).toHaveBeenCalled();
+		});
+		test("Should handle multipe custom formats.", () => {
+			const firstFormat: LogForm = {
+				timestamp: new Date().toISOString(), // Current timestamp
+				level: 'info',                        // Example log level
+				message: 'This is a log message',     // Example log message
+				service: 'first-service',
+				userId: 'first-user',
+				requestId: 'req-12345',               // Example request ID
+				ipAddress: '192.168.1.1',              // Example IP address
+				responseTime: '100ms',                 // Example response time
+				metadata: { additionalInfo: 'some info' } // Example additional metadata
+			};
+			const secondFormat: LogForm = {
+				timestamp: new Date().toISOString(), // Current timestamp
+				level: 'error',                       // Example log level
+				message: 'An error occurred',         // Example log message
+				service: 'second-service',
+				userId: 'second-user',
+				requestId: 'req-67890',               // Example request ID
+				ipAddress: '192.168.1.2',              // Example IP address
+				responseTime: '200ms',                 // Example response time
+				metadata: { errorDetails: 'stack trace' } // Example additional metadata
+			};
+
+			// Set the first custom format
+			logger.setCustomFormat(firstFormat);
+			logSpy = jest.spyOn(logger['logger'], 'info');
+			logger.log('info', 'Test log message with first format', firstFormat);
+			expect(logSpy).toHaveBeenCalled();
+
+			// Set the second custom format
+			logger.setCustomFormat(secondFormat);
+			logSpy.mockClear(); // Clear previous calls
+			logger.log('info', 'Test log message with second format', secondFormat);
+			expect(logSpy).toHaveBeenCalled();
+
+			// Verify that the last log call used the second format
+			const logArgs = logSpy.mock.calls[0];
+			expect(logArgs[1]).toMatchObject({ meta: {
+				timestamp: new Date().toISOString(), // Current timestamp
+				level: 'error',                       // Example log level
+				message: 'An error occurred',         // Example log message
+				service: 'second-service',
+				userId: 'second-user',
+				requestId: 'req-67890',               // Example request ID
+				ipAddress: '192.168.1.2',              // Example IP address
+				responseTime: '200ms',                 // Example response time
+				metadata: { errorDetails: 'stack trace' } // Example additional metadata
+			}});
+		});
+		test("Should fall back to default format if no custom format is set.", () => {
+			// Use a spy to capture the log output
+			logSpy = jest.spyOn(logger['logger'], 'info');
+
+			// Log a message without setting a custom format
+			logger.log('info', 'Test log message without custom format', {});
+
+			// Check if the spy was called
+			expect(logSpy).toHaveBeenCalled();
+
+			// Get the arguments passed to the spy
+			const logArgs = logSpy.mock.calls[0];
+
+			// The first argument should be the log message
+			const logMessage = logArgs[0]; // This should be a string
+			const meta = logArgs[1]; // The metadata
+
+			// Verify that the log message is correct
+			expect(logMessage).toBe('Test log message without custom format');
+			expect(meta.meta).toEqual({});
+		});
+    });
+}); 

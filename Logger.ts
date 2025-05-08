@@ -82,6 +82,10 @@ export class Logger {
 		});
 	}
 	public setCustomFormat(format: Partial<LogForm>) {
+		// Validate the format input
+		if (format === null || typeof format !== 'object') {
+			throw new Error('Invalid custom format: format must be an object.');
+		}
 		// Update the logger's format based on the provided format object
 		this.logger.format = winston.format.combine(
 			winston.format.timestamp(),
