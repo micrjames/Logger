@@ -164,4 +164,24 @@ export class Logger {
             next();
 		};
     }
+    public requestLogger() {
+        return (req: Request, res: Response, next: NextFunction) => {
+			const start = Date.now();
+			res.on('finish', () => {
+				const logData: LogData = {
+					method: req.method,
+					url: req.url,
+					headers: req.headers,
+					query: req.query,
+					body: req.body,
+					status: res.statusCode,
+					responseTime: Date.now() - start
+				};
+				// Log at different levels based on response status
+				const logLevel = res.statusCode >= 400 ? 'error' : 'info';
+				this.log(logLevel, 'HTTP request', logData);
+			});
+            next();
+        };
+    }
 }

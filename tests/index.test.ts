@@ -5,7 +5,7 @@ import fs from "fs";
 import path from "path";
 import mockFs from "mock-fs";
 import { format } from "date-fns"; // For date formatting
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 
 describe("A Logger", () => {
    let logger: Logger;
@@ -477,4 +477,18 @@ describe("A Logger", () => {
 			expect(meta.meta).toEqual({});
 		});
     });
+	describe("Request Logger", () => {
+		beforeEach(() => {
+			logSpy = jest.spyOn(logger, 'log');
+		});
+		test.todo("Should log HTTP GET requests with correct data.");
+		test.todo("Should log HTTP POST requests with correct data");
+		test.todo("Should log HTTP requests with error status");
+		test.todo("Should log HTTP requests with response time");
+		test.todo("Should handle multiple requests in sequence");
+		test.todo("Should not log sensitive information");
+		test.todo("Should handle requests with no body or headers");
+		test.todo("Should handle errors in logging gracefully");
+		test.todo("Should log requests with large payloads");
+	});
 }); 
