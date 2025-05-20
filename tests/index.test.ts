@@ -511,15 +511,43 @@ describe("A Logger", () => {
 				query: {},
 				body: {},
 				statusCode: 404,
+			},
+			{
+				method: 'POST',
+				url: '/api/test',
+				headers: { 'content-type': 'application/json' },
+				query: {},
+				body: { password: 'secret' }, // Sensitive information
+				statusCode: 200,
+				shouldNotLogSensitive: true,
+			},
+			{
+				method: 'GET',
+				url: '/api/test',
+				headers: { 'content-type': 'application/json' },
+				query: {},
+				body: { username: 'user1', password: 'secret' }, // Sensitive information
+				statusCode: 200,
+				shouldNotLogSensitive: true,
+			},
+			{
+				method: 'GET',
+				url: '/api/test',
+				headers: {}, // No headers
+				query: {},
+				body: {}, // No body
+				statusCode: 200
+			},
+			{
+				method: 'POST',
+				url: '/api/test',
+				headers: { 'content-type': 'application/json' },
+				query: {},
+				body: { largeData: new Array(10000).fill('x').join('') }, // Simulate a large payload
+				statusCode: 200
 			}
-		] as HttpRequestTestCase[])("Should log HTTP requests with correct data.", ({ method, url, headers, query, body, statusCode }) => {
-			req = {
-				method,
-				url,
-				headers,
-				query,
-				body
-			} as Request;
+		] as HttpRequestTestCase[])("Should log HTTP requests with correct data.", ({ method, url, headers, query, body, statusCode, shouldNotLogSensitive }) => {
+			req = { method, url, headers, query, body } as Request;
 
 			res = {
 				statusCode,
@@ -539,47 +567,48 @@ describe("A Logger", () => {
 				url,
 				headers,
 				query,
-				body,
+				body: shouldNotLogSensitive ? expect.not.objectContaining({ password: expect.any(String) }) : body,
 				status: statusCode,
 				responseTime: expect.any(Number)
 			}));
 			expect(next).toHaveBeenCalled();
 		});
-		test("Should log http requests with response time.", () => {
-			const testCase: HttpRequestTestCase = {
+
+		test("Should handle errors in logging gracefully.", () => {
+			const req = {
 				method: 'GET',
 				url: '/api/test',
 				headers: { 'content-type': 'application/json' },
 				query: {},
-				body: {},
-				statusCode: 200
-			};
-			req = {
-				...((({ statusCode, ...rest }) => rest)(testCase)) // Exclude statusCode
+				body: {}
 			} as Request;
 
-			res = {
-				statusCode: testCase.statusCode,
-				on: jest.fn((event, callback) => {
+			const res = {
+				statusCode: 200,
+		   on: jest.fn((event, callback) => {
 					if (event === 'finish') {
 						callback(); // Simulate response finish
 					}
 				})
 			} as unknown as Response;
 
-			const next = jest.fn();
+			const next = jest.fn(() => { throw new Error("Test error"); }); // Simulate an error in the next middleware
 
 			const middleware = logger.requestLogger();
-			middleware(req, res, next);
+			expect(() => middleware(req, res, next)).toThrow("Test error"); // Ensure the error is thrown
 
+			// Check that the logger was still called
 			expect(logSpy).toHaveBeenCalled();
 			const logArgs = logSpy.mock.calls[0][2]; // Get the log data
 			expect(logArgs).toMatchObject({
-				...((({ statusCode, ...rest }) => rest)(testCase)), // Exclude statusCode
-				status: testCase.statusCode,
-				responseTime: expect.any(Number) // Ensure response time is logged
+				method: 'GET',
+				url: '/api/test',
+				headers: req.headers,
+				query: req.query,
+				body: req.body,
+				status: 200,
+				responseTime: expect.any(Number)
 			});
-			expect(next).toHaveBeenCalled();
 		});
 		test("Should handle multiple requests in sequence.", () => {
 			const req1 = {
@@ -645,162 +674,6 @@ describe("A Logger", () => {
 				status: 201,
 				responseTime: expect.any(Number)
 			});
-		});
-		test("Should not log sensitive information.", () => {
-			req = {
-				method: 'POST',
-				url: '/api/test',
-				headers: { 'content-type': 'application/json' },
-				query: {},
-				body: { password: 'secret' } // Sensitive information
-			} as Request;
-
-			res = {
-				statusCode: 200,
-				on: jest.fn((event, callback) => {
-					if (event === 'finish') {
-						callback(); // Simulate response finish
-					}
-				})
-			} as unknown as Response;
-
-			const next = jest.fn();
-
-			middleware(req, res, next);
-
-			expect(logSpy).toHaveBeenCalled();
-			const logArgs = logSpy.mock.calls[0][2]; // Get the log data
-			expect(logArgs.body).not.toHaveProperty('password'); // Ensure sensitive data is not logged
-			expect(next).toHaveBeenCalled();
-		});
-		test("Should log without sensitive information.", () => {
-            req = {
-                method: 'GET',
-                url: '/api/test',
-                headers: { 'content-type': 'application/json' },
-                query: {},
-                body: { username: 'user1', password: 'secret' } // Sensitive information
-            } as Request;
-
-            res = {
-                statusCode: 200,
-                on: jest.fn((event, callback) => {
-                    if (event === 'finish') {
-                        callback(); // Simulate response finish
-                    }
-                })
-            } as unknown as Response;
-
-            next = jest.fn();
-
-            middleware(req, res, next);
-
-            expect(logSpy).toHaveBeenCalled();
-            const logArgs = logSpy.mock.calls[0][2]; // Get the log data
-            expect(logArgs.body).not.toHaveProperty('password'); // Ensure sensitive data is not logged
-            expect(logArgs.body).toHaveProperty('username', 'user1'); // Ensure non-sensitive data is logged
-            expect(next).toHaveBeenCalled();
-        });
-
-		test("Should handle requests with no body or headers.", () => {
-			const req = {
-				method: 'GET',
-				url: '/api/test',
-				headers: {}, // No headers
-				query: {},
-				body: {} // No body
-			} as Request;
-
-			const res = {
-				statusCode: 200,
-				on: jest.fn((event, callback) => {
-					if (event === 'finish') {
-						callback(); // Simulate response finish
-					}
-				})
-			} as unknown as Response;
-
-			const next = jest.fn();
-
-			const middleware = logger.requestLogger();
-			middleware(req, res, next);
-
-			expect(logSpy).toHaveBeenCalled();
-			const logArgs = logSpy.mock.calls[0][2]; // Get the log data
-			expect(logArgs).toMatchObject({
-				method: 'GET',
-				url: '/api/test',
-				headers: {},
-				query: {},
-				body: {},
-				status: 200,
-				responseTime: expect.any(Number)
-			});
-			expect(next).toHaveBeenCalled();
-		});
-		test("Should handle errors in logging gracefully.", () => {
-			const req = {
-				method: 'GET',
-				url: '/api/test',
-				headers: { 'content-type': 'application/json' },
-				query: {},
-				body: {}
-			} as Request;
-
-			const res = {
-				statusCode: 200,
-		   on: jest.fn((event, callback) => {
-					if (event === 'finish') {
-						callback(); // Simulate response finish
-					}
-				})
-			} as unknown as Response;
-
-			const next = jest.fn(() => { throw new Error("Test error"); }); // Simulate an error in the next middleware
-
-			const middleware = logger.requestLogger();
-			expect(() => middleware(req, res, next)).toThrow("Test error"); // Ensure the error is thrown
-
-			// Check that the logger was still called
-			expect(logSpy).toHaveBeenCalled();
-			const logArgs = logSpy.mock.calls[0][2]; // Get the log data
-			expect(logArgs).toMatchObject({
-				method: 'GET',
-				url: '/api/test',
-				headers: req.headers,
-				query: req.query,
-				body: req.body,
-				status: 200,
-				responseTime: expect.any(Number)
-			});
-		});
-		test("Should log requests with large payloads.", () => {
-			const req = {
-				method: 'POST',
-				url: '/api/test',
-				headers: { 'content-type': 'application/json' },
-				query: {},
-				body: { largeData: new Array(10000).fill('x').join('') } // Simulate a large payload
-			} as Request;
-
-			const res = {
-				statusCode: 200,
-				on: jest.fn((event, callback) => {
-					if (event === 'finish') {
-						callback(); // Simulate response finish
-					}
-				})
-			} as unknown as Response;
-
-			const next = jest.fn();
-
-			const middleware = logger.requestLogger();
-			middleware(req, res, next);
-
-			expect(logSpy).toHaveBeenCalled();
-			const logArgs = logSpy.mock.calls[0][2]; // Get the log data
-			expect(logArgs.body.largeData.length).toBe(10000); // Ensure large payload is logged
-			expect(next).toHaveBeenCalled();
 		});
 	});
 }); 

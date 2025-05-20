@@ -69,5 +69,6 @@ type HttpRequestTestCase = {
     query: { [key: string]: any };
     body: any;
     statusCode: number;
+	shouldNotLogSensitive: boolean;
 };
 export { LoggerMthds, LogMessageOptions, logMessageTest, asyncLogMessageTest, testCustomFormat, expectedLogEntry, LogTestCase, AsyncLogTestCase, LogWithContextOptions, logWithContextTest, LogWithContextTestCase, HttpRequestTestCase };
