@@ -250,8 +250,10 @@ describe("A Logger", () => {
 	   const currentDate = format(new Date(), 'yyyy-MM-dd');
 	   const logFilePath = path.join('logs', `${currentDate}-combined.log`);
 	   const errorLogFilePath = path.join('logs', `${currentDate}-error.log`);
-	   // const logFilePath = path.join(__dirname, 'logs', '2023-10-01-combined.log'); // Adjust the date as needed for your test
-	   // const errorLogFilePath = path.join(__dirname, 'logs', '2023-10-01-error.log'); // Adjust the date as needed for your test
+	   // const logFilePath = path.join(__dirname, 'logs', '2023-10-01-combined.log');
+	   // Adjust the date as needed for your test
+	   // const errorLogFilePath = path.join(__dirname, 'logs', '2023-10-01-error.log');
+	   // Adjust the date as needed for your test
 	   /*
 	   beforeEach(() => {
 		   // Clear the log files before each test
@@ -305,6 +307,21 @@ describe("A Logger", () => {
 		   expect(existsErrorLogFilePath).toBe(true);
 		   const errorLogFileContent = fs.readFileSync(errorLogFilePath, 'utf-8');
 		   expect(errorLogFileContent).toContain(errorMessage);
+	   });
+	   test("Should not log messages below the current log level.", async () => {
+		   logger.setLogLevel('error'); // Set log level to error
+
+		   const logMessage = "This info message should not be logged.";
+		   logger.log('info', logMessage); // Attempt to log an info message
+
+		   // Wait for a short time to ensure logs are written
+		   await new Promise(resolve => setTimeout(resolve, 100)); 
+
+		   // Check if the combined log file exists and does not contain the log message
+		   const existsLogFilePath = fs.existsSync(logFilePath);
+		   expect(existsLogFilePath).toBe(true);
+		   const logFileContent = fs.readFileSync(logFilePath, 'utf-8');
+		   expect(logFileContent).not.toContain(logMessage);
 	   });
    });
    describe("Multiple Log Calls", () => {
