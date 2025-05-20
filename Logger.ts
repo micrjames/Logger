@@ -2,6 +2,7 @@ import winston, { Logger as WinstonLogger } from "winston";
 import DailyRotateFile from "winston-daily-rotate-file";
 import { Request, Response, NextFunction } from "express";
 import { customLevels, CustomLevels, LoggerOptionsExtended, LogData, LogForm } from "./logger.defns";
+import { ObjectUtils } from "./ObjectUtils/ObjectUtils";
 
 export class Logger {
     private logger: WinstonLogger;
@@ -68,12 +69,13 @@ export class Logger {
 		}
 
 		const sanitizedData = Array.isArray(logData) ? [] : {};
-		for (const key in logData) {
-			if (logData.hasOwnProperty(key)) {
-				if (this.sensitiveFields.includes(key)) {
-					continue; // Skip sensitive fields
-				}
-				sanitizedData[key] = this.sanitizeLogData(logData[key]); // Recursively sanitize
+		// Use ObjectUtils to omit sensitive fields at the top level
+		const topLevelSanitized = ObjectUtils.omit(logData, this.sensitiveFields);
+
+		// Recursively sanitize nested properties
+		for (const key in topLevelSanitized) {
+			if (topLevelSanitized.hasOwnProperty(key)) {
+				sanitizedData[key] = this.sanitizeLogData(topLevelSanitized[key]); // Recursively sanitize
 			}
 		}
 		return sanitizedData;
