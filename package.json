@@ -4,11 +4,12 @@
   "description": "A customizable logging utility for Node.js applications that integrates with Winston to provide dynamic log levels, contextual logging, log rotation, and middleware support for Express, ensuring organized and efficient logging of application events and HTTP requests.",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+	  "postinstall": "git clone git@github.com:micrjames/ObjectUtils",
+	  "test": "jest"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "@babel/core": "^7.23.5",
     "@babel/preset-env": "^7.23.5",

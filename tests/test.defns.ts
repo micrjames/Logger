@@ -62,4 +62,12 @@ const expectedLogEntry: LogForm = {
 	responseTime: '100ms',
 	metadata: {},
 };
-export { LoggerMthds, LogMessageOptions, logMessageTest, asyncLogMessageTest, testCustomFormat, expectedLogEntry, LogTestCase, AsyncLogTestCase, LogWithContextOptions, logWithContextTest, LogWithContextTestCase };
+type HttpRequestTestCase = {
+    method: 'GET' | 'POST'; // You can extend this to include other HTTP methods if needed
+    url: string;
+    headers: { [key: string]: string };
+    query: { [key: string]: any };
+    body: any;
+    statusCode: number;
+};
+export { LoggerMthds, LogMessageOptions, logMessageTest, asyncLogMessageTest, testCustomFormat, expectedLogEntry, LogTestCase, AsyncLogTestCase, LogWithContextOptions, logWithContextTest, LogWithContextTestCase, HttpRequestTestCase };

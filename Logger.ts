@@ -7,6 +7,8 @@ export class Logger {
     private logger: WinstonLogger;
     private customLevels: CustomLevels;
 
+	private sensitiveFields: string[] = ['password', 'creditCard', 'ssn']; // Sensitive fields to sanitize 
+
 	constructor(logLevel: string = 'info') {
 		this.customLevels = customLevels; 
 
@@ -60,6 +62,22 @@ export class Logger {
 		return this.logger['level'] as keyof CustomLevels['levels'];
 	}
 
+	private sanitizeLogData(logData: any): any {
+		if (typeof logData !== 'object' || logData === null) {
+			return logData; // Return if not an object
+		}
+
+		const sanitizedData = Array.isArray(logData) ? [] : {};
+		for (const key in logData) {
+			if (logData.hasOwnProperty(key)) {
+				if (this.sensitiveFields.includes(key)) {
+					continue; // Skip sensitive fields
+				}
+				sanitizedData[key] = this.sanitizeLogData(logData[key]); // Recursively sanitize
+			}
+		}
+		return sanitizedData;
+	}
 	private customFormat(): winston.Logform.Format {
 		return winston.format.printf(({ timestamp, level, message, ...metadata }: { 
 			timestamp: string; 
@@ -67,16 +85,17 @@ export class Logger {
 			message: string; 
 			[key: string]: any; // Allow any additional metadata
 		}) => {
+			const sanitizedMetadata = this.sanitizeLogData(metadata); // Sanitize metadata
 			const log: LogForm = {
                 timestamp: timestamp || new Date().toISOString(),
                 level,
                 message,
-                service: metadata.service ||  'your-service-name', // Replace with your service name
-                requestId: metadata.requestId || 'N/A',
-                userId: metadata.userId || 'N/A',
-                ipAddress: metadata.ipAddress || 'N/A',
-                responseTime: metadata.responseTime || 'N/A',
-                metadata: Object.keys(metadata).length ? metadata : undefined,
+                service: sanitizedMetadata.service ||  'your-service-name', // Replace with your service name
+                requestId: sanitizedMetadata.requestId || 'N/A',
+                userId: sanitizedMetadata.userId || 'N/A',
+                ipAddress: sanitizedMetadata.ipAddress || 'N/A',
+                responseTime: sanitizedMetadata.responseTime || 'N/A',
+                metadata: Object.keys(sanitizedMetadata).length ? sanitizedMetadata : undefined,
             };
             return JSON.stringify(log);
 		});
@@ -177,9 +196,13 @@ export class Logger {
 					status: res.statusCode,
 					responseTime: Date.now() - start
 				};
+
+				// Sanitize log data before logging
+				const sanitizedLogData = this.sanitizeLogData(logData);
+
 				// Log at different levels based on response status
 				const logLevel = res.statusCode >= 400 ? 'error' : 'info';
-				this.log(logLevel, 'HTTP request', logData);
+				this.log(logLevel, 'HTTP request', sanitizedLogData);
 			});
             next();
         };

@@ -1,6 +1,6 @@
 import { Logger } from "../Logger";
 import { CustomLevels, LogForm } from "../logger.defns";
-import { LogMessageOptions, logMessageTest, asyncLogMessageTest, LoggerMthds, testCustomFormat, LogTestCase, AsyncLogTestCase, logWithContextTest, LogWithContextTestCase } from "./test.defns";
+import { LogMessageOptions, logMessageTest, asyncLogMessageTest, LoggerMthds, testCustomFormat, LogTestCase, AsyncLogTestCase, logWithContextTest, LogWithContextTestCase, HttpRequestTestCase } from "./test.defns";
 import fs from "fs";
 import path from "path";
 import mockFs from "mock-fs";
@@ -444,7 +444,8 @@ describe("A Logger", () => {
 			// Verify that the last log call used the second format
 			const logArgs = logSpy.mock.calls[0];
 			expect(logArgs[1]).toMatchObject({ meta: {
-				timestamp: new Date().toISOString(), // Current timestamp
+				// timestamp: new Date().toISOString(), // Current timestamp
+				timestamp: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/), // Regex for ISO 8601 format
 				level: 'error',                       // Example log level
 				message: 'An error occurred',         // Example log message
 				service: 'second-service',
@@ -478,17 +479,328 @@ describe("A Logger", () => {
 		});
     });
 	describe("Request Logger", () => {
+		let req: Request;
+		let res: Response;
+		let next: NextFunction;
+	    let middleware: (req: Request, res: Response, next: NextFunction) => void;
 		beforeEach(() => {
 			logSpy = jest.spyOn(logger, 'log');
+			middleware = logger.requestLogger();
 		});
-		test.todo("Should log HTTP GET requests with correct data.");
-		test.todo("Should log HTTP POST requests with correct data");
-		test.todo("Should log HTTP requests with error status");
-		test.todo("Should log HTTP requests with response time");
-		test.todo("Should handle multiple requests in sequence");
-		test.todo("Should not log sensitive information");
-		test.todo("Should handle requests with no body or headers");
-		test.todo("Should handle errors in logging gracefully");
-		test.todo("Should log requests with large payloads");
+		test.each([
+			{
+				method: 'GET',
+				url: '/api/test',
+				headers: { 'content-type': 'application/json' },
+				query: {},
+				body: {},
+				statusCode: 200,
+			},
+			{
+				method: 'POST',
+				url: '/api/test',
+				headers: { 'content-type': 'application/json' },
+				query: {},
+				body: { key: 'value' },
+				statusCode: 201,
+			},
+			{
+				method: 'GET',
+				url: '/api/test',
+				headers: { 'content-type': 'application/json' },
+				query: {},
+				body: {},
+				statusCode: 404,
+			}
+		] as HttpRequestTestCase[])("Should log HTTP requests with correct data.", ({ method, url, headers, query, body, statusCode }) => {
+			req = {
+				method,
+				url,
+				headers,
+				query,
+				body
+			} as Request;
+
+			res = {
+				statusCode,
+				on: jest.fn((event, callback) => {
+					if (event === 'finish') {
+						callback(); // Simulate response finish
+					}
+				})
+			} as unknown as Response;
+
+			next = jest.fn();
+			middleware(req, res, next);
+
+			const logLevel = res.statusCode >= 400 ? 'error' : 'info';
+			expect(logSpy).toHaveBeenCalledWith(logLevel, 'HTTP request', expect.objectContaining({
+				method,
+				url,
+				headers,
+				query,
+				body,
+				status: statusCode,
+				responseTime: expect.any(Number)
+			}));
+			expect(next).toHaveBeenCalled();
+		});
+		test("Should log http requests with response time.", () => {
+			const testCase: HttpRequestTestCase = {
+				method: 'GET',
+				url: '/api/test',
+				headers: { 'content-type': 'application/json' },
+				query: {},
+				body: {},
+				statusCode: 200
+			};
+			req = {
+				...((({ statusCode, ...rest }) => rest)(testCase)) // Exclude statusCode
+			} as Request;
+
+			res = {
+				statusCode: testCase.statusCode,
+				on: jest.fn((event, callback) => {
+					if (event === 'finish') {
+						callback(); // Simulate response finish
+					}
+				})
+			} as unknown as Response;
+
+			const next = jest.fn();
+
+			const middleware = logger.requestLogger();
+			middleware(req, res, next);
+
+			expect(logSpy).toHaveBeenCalled();
+			const logArgs = logSpy.mock.calls[0][2]; // Get the log data
+			expect(logArgs).toMatchObject({
+				...((({ statusCode, ...rest }) => rest)(testCase)), // Exclude statusCode
+				status: testCase.statusCode,
+				responseTime: expect.any(Number) // Ensure response time is logged
+			});
+			expect(next).toHaveBeenCalled();
+		});
+		test("Should handle multiple requests in sequence.", () => {
+			const req1 = {
+				method: 'GET',
+				url: '/api/test1',
+				headers: { 'content-type': 'application/json' },
+				query: {},
+				body: {}
+			} as Request;
+
+			const req2 = {
+				method: 'POST',
+				url: '/api/test2',
+				headers: { 'content-type': 'application/json' },
+				query: {},
+				body: { key: 'value' }
+			} as Request;
+
+			const res1 = {
+				statusCode: 200,
+				on: jest.fn((event, callback) => {
+					if (event === 'finish') {
+						callback(); // Simulate response finish
+					}
+				})
+			} as unknown as Response;
+
+			const res2 = {
+				statusCode: 201,
+				on: jest.fn((event, callback) => {
+					if (event === 'finish') {
+						callback(); // Simulate response finish
+					}
+				})
+			} as unknown as Response;
+
+			const next = jest.fn();
+
+			const middleware = logger.requestLogger();
+			middleware(req1, res1, next);
+			middleware(req2, res2, next);
+
+			expect(logSpy).toHaveBeenCalledTimes(2); // Ensure both requests are logged
+
+			const logArgs1 = logSpy.mock.calls[0][2]; // Get the log data for the first request
+			expect(logArgs1).toMatchObject({
+				method: 'GET',
+				url: '/api/test1',
+				headers: req1.headers,
+				query: req1.query,
+				body: req1.body,
+				status: 200,
+				responseTime: expect.any(Number)
+			});
+
+			const logArgs2 = logSpy.mock.calls[1][2]; // Get the log data for the second request
+			expect(logArgs2).toMatchObject({
+				method: 'POST',
+				url: '/api/test2',
+				headers: req2.headers,
+				query: req2.query,
+				body: req2.body,
+				status: 201,
+				responseTime: expect.any(Number)
+			});
+		});
+		test("Should not log sensitive information.", () => {
+			req = {
+				method: 'POST',
+				url: '/api/test',
+				headers: { 'content-type': 'application/json' },
+				query: {},
+				body: { password: 'secret' } // Sensitive information
+			} as Request;
+
+			res = {
+				statusCode: 200,
+				on: jest.fn((event, callback) => {
+					if (event === 'finish') {
+						callback(); // Simulate response finish
+					}
+				})
+			} as unknown as Response;
+
+			const next = jest.fn();
+
+			middleware(req, res, next);
+
+			expect(logSpy).toHaveBeenCalled();
+			const logArgs = logSpy.mock.calls[0][2]; // Get the log data
+			expect(logArgs.body).not.toHaveProperty('password'); // Ensure sensitive data is not logged
+			expect(next).toHaveBeenCalled();
+		});
+		test("Should log without sensitive information.", () => {
+            req = {
+                method: 'GET',
+                url: '/api/test',
+                headers: { 'content-type': 'application/json' },
+                query: {},
+                body: { username: 'user1', password: 'secret' } // Sensitive information
+            } as Request;
+
+            res = {
+                statusCode: 200,
+                on: jest.fn((event, callback) => {
+                    if (event === 'finish') {
+                        callback(); // Simulate response finish
+                    }
+                })
+            } as unknown as Response;
+
+            next = jest.fn();
+
+            middleware(req, res, next);
+
+            expect(logSpy).toHaveBeenCalled();
+            const logArgs = logSpy.mock.calls[0][2]; // Get the log data
+            expect(logArgs.body).not.toHaveProperty('password'); // Ensure sensitive data is not logged
+            expect(logArgs.body).toHaveProperty('username', 'user1'); // Ensure non-sensitive data is logged
+            expect(next).toHaveBeenCalled();
+        });
+
+		test("Should handle requests with no body or headers.", () => {
+			const req = {
+				method: 'GET',
+				url: '/api/test',
+				headers: {}, // No headers
+				query: {},
+				body: {} // No body
+			} as Request;
+
+			const res = {
+				statusCode: 200,
+				on: jest.fn((event, callback) => {
+					if (event === 'finish') {
+						callback(); // Simulate response finish
+					}
+				})
+			} as unknown as Response;
+
+			const next = jest.fn();
+
+			const middleware = logger.requestLogger();
+			middleware(req, res, next);
+
+			expect(logSpy).toHaveBeenCalled();
+			const logArgs = logSpy.mock.calls[0][2]; // Get the log data
+			expect(logArgs).toMatchObject({
+				method: 'GET',
+				url: '/api/test',
+				headers: {},
+				query: {},
+				body: {},
+				status: 200,
+				responseTime: expect.any(Number)
+			});
+			expect(next).toHaveBeenCalled();
+		});
+		test("Should handle errors in logging gracefully.", () => {
+			const req = {
+				method: 'GET',
+				url: '/api/test',
+				headers: { 'content-type': 'application/json' },
+				query: {},
+				body: {}
+			} as Request;
+
+			const res = {
+				statusCode: 200,
+		   on: jest.fn((event, callback) => {
+					if (event === 'finish') {
+						callback(); // Simulate response finish
+					}
+				})
+			} as unknown as Response;
+
+			const next = jest.fn(() => { throw new Error("Test error"); }); // Simulate an error in the next middleware
+
+			const middleware = logger.requestLogger();
+			expect(() => middleware(req, res, next)).toThrow("Test error"); // Ensure the error is thrown
+
+			// Check that the logger was still called
+			expect(logSpy).toHaveBeenCalled();
+			const logArgs = logSpy.mock.calls[0][2]; // Get the log data
+			expect(logArgs).toMatchObject({
+				method: 'GET',
+				url: '/api/test',
+				headers: req.headers,
+				query: req.query,
+				body: req.body,
+				status: 200,
+				responseTime: expect.any(Number)
+			});
+		});
+		test("Should log requests with large payloads.", () => {
+			const req = {
+				method: 'POST',
+				url: '/api/test',
+				headers: { 'content-type': 'application/json' },
+				query: {},
+				body: { largeData: new Array(10000).fill('x').join('') } // Simulate a large payload
+			} as Request;
+
+			const res = {
+				statusCode: 200,
+				on: jest.fn((event, callback) => {
+					if (event === 'finish') {
+						callback(); // Simulate response finish
+					}
+				})
+			} as unknown as Response;
+
+			const next = jest.fn();
+
+			const middleware = logger.requestLogger();
+			middleware(req, res, next);
+
+			expect(logSpy).toHaveBeenCalled();
+			const logArgs = logSpy.mock.calls[0][2]; // Get the log data
+			expect(logArgs.body.largeData.length).toBe(10000); // Ensure large payload is logged
+			expect(next).toHaveBeenCalled();
+		});
 	});
 }); 
